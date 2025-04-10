@@ -20,6 +20,19 @@ const ClubMembers: React.FC = () => {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [form] = Form.useForm();
 
+  // Load dữ liệu từ localStorage khi component mount
+  useEffect(() => {
+    const storedData = localStorage.getItem(`members-${clubId}`);
+    if (storedData) {
+      setMembers(JSON.parse(storedData));
+    }
+  }, [clubId]);
+
+  // Lưu dữ liệu vào localStorage mỗi khi members thay đổi
+  useEffect(() => {
+    localStorage.setItem(`members-${clubId}`, JSON.stringify(members));
+  }, [members, clubId]);
+
   const columns: ColumnsType<Member> = [
     {
       title: 'Tên thành viên',
@@ -100,7 +113,7 @@ const ClubMembers: React.FC = () => {
       const newMember: Member = {
         id: editingMember?.id || Date.now().toString(),
         ...values,
-        joinDate: new Date().toISOString().split('T')[0],
+        joinDate: editingMember?.joinDate || new Date().toISOString().split('T')[0],
       };
 
       if (editingMember) {
@@ -186,4 +199,4 @@ const ClubMembers: React.FC = () => {
   );
 };
 
-export default ClubMembers; 
+export default ClubMembers;
