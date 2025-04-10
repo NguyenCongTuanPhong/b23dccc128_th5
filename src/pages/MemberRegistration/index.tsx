@@ -1,36 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Tag, message, Input, Timeline } from 'antd';
-import { PlusOutlined, CheckOutlined, CloseOutlined, HistoryOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { IMemberRegistration, IActionHistory, IClub } from '@/interfaces/member';
-import RegistrationForm from '@/components/MemberRegistration/RegistrationForm';
-import { getClubs } from '@/services/club';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Select,
+  message,
+  Table,
+  Space,
+  Popconfirm,
+  Modal,
+  Typography,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+
+const { Text } = Typography;
+
+interface Member {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  address: string;
+  strength: string;
+  clubId: string;
+  reason: string;
+}
+
+interface Club {
+  id: string;
+  name: string;
+}
 
 const MemberRegistrationPage: React.FC = () => {
-  const [registrations, setRegistrations] = useState<IMemberRegistration[]>([]);
-  const [selectedRows, setSelectedRows] = useState<IMemberRegistration[]>([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
-  const [currentRegistration, setCurrentRegistration] = useState<IMemberRegistration | null>(null);
-  const [actionHistory, setActionHistory] = useState<IActionHistory[]>([]);
-  const [rejectReason, setRejectReason] = useState('');
-  const [clubs, setClubs] = useState<IClub[]>([]);
+  const [form] = Form.useForm();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch clubs from localStorage when component mounts
   useEffect(() => {
-    const fetchClubs = async () => {
-      const response = await getClubs();
-      setClubs(response.data);
+    const storedMembers = localStorage.getItem('clubManagement_members');
+    if (storedMembers) {
+      setMembers(JSON.parse(storedMembers));
+    }
+
+    const storedClubs = localStorage.getItem('clubManagement_clubs');
+    if (storedClubs) {
+      setClubs(JSON.parse(storedClubs));
+    }
+
+    const handleStorageChange = () => {
+      const updatedClubs = localStorage.getItem('clubManagement_clubs');
+      if (updatedClubs) {
+        setClubs(JSON.parse(updatedClubs));
+      }
     };
-    fetchClubs();
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const columns: ColumnsType<IMemberRegistration> = [
+  useEffect(() => {
+    localStorage.setItem('clubManagement_members', JSON.stringify(members));
+  }, [members]);
+
+  const handleFinish = (values: Omit<Member, 'id'>) => {
+    const newMember: Member = {
+      id: Date.now().toString(),
+      ...values,
+    };
+    setMembers([...members, newMember]);
+    form.resetFields();
+    setIsModalOpen(false);
+    message.success('Thêm đơn đăng ký thành công');
+  };
+
+  const handleDelete = (id: string) => {
+    setMembers(members.filter((member) => member.id !== id));
+    message.success('Xóa đơn đăng ký thành công');
+  };
+
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+    },
     {
       title: 'Họ tên',
       dataIndex: 'fullName',
       key: 'fullName',
-      sorter: (a, b) => a.fullName.localeCompare(b.fullName),
     },
     {
       title: 'Email',
@@ -38,284 +98,120 @@ const MemberRegistrationPage: React.FC = () => {
       key: 'email',
     },
     {
-      title: 'SĐT',
+      title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
     },
     {
-      title: 'Giới tính',
-      dataIndex: 'gender',
-      key: 'gender',
-      render: (gender: 'male' | 'female' | 'other') => {
-        const genderMap = {
-          male: 'Nam',
-          female: 'Nữ',
-          other: 'Khác',
-        };
-        return genderMap[gender];
-      },
-    },
-    {
-      title: 'Câu lạc bộ',
-      dataIndex: 'clubId',
-      key: 'clubId',
-      render: (clubId: string) => {
-        const club = clubs.find(c => c.id === clubId);
-        return club ? club.name : 'N/A';
-      },
-    },
-    {
       title: 'Trạng thái',
-      dataIndex: 'status',
       key: 'status',
-      render: (status: 'pending' | 'approved' | 'rejected') => {
-        const statusConfig = {
-          pending: { color: 'gold', text: 'Đang chờ' },
-          approved: { color: 'green', text: 'Đã duyệt' },
-          rejected: { color: 'red', text: 'Từ chối' },
-        };
-        return <Tag color={statusConfig[status].color}>{statusConfig[status].text}</Tag>;
-      },
-      filters: [
-        { text: 'Đang chờ', value: 'pending' },
-        { text: 'Đã duyệt', value: 'approved' },
-        { text: 'Từ chối', value: 'rejected' },
-      ],
-      onFilter: (value, record) => record.status === value,
+      render: () => <Text type="success">Đang hoạt động</Text>,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button type="link" onClick={() => handleView(record)}>
-            Chi tiết
+      render: (_: any, record: Member) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} style={{ color: 'red' }}>
+            Sửa
           </Button>
-          {record.status === 'pending' && (
-            <>
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={() => handleApprove([record])}
-              >
-                Duyệt
-              </Button>
-              <Button
-                danger
-                icon={<CloseOutlined />}
-                onClick={() => handleReject([record])}
-              >
-                Từ chối
-              </Button>
-            </>
-          )}
-          <Button
-            type="link"
-            icon={<HistoryOutlined />}
-            onClick={() => handleViewHistory(record)}
+          <Popconfirm
+            title="Xác nhận xoá đơn đăng ký?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Xóa"
+            cancelText="Hủy"
           >
-            Lịch sử
-          </Button>
+            <Button type="link" icon={<DeleteOutlined />} style={{ color: 'red' }}>
+              Xóa
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  const handleView = (registration: IMemberRegistration) => {
-    setCurrentRegistration(registration);
-    setIsModalVisible(true);
-  };
-
-  const handleApprove = (records: IMemberRegistration[]) => {
-    Modal.confirm({
-      title: `Xác nhận duyệt ${records.length} đơn đăng ký`,
-      content: 'Bạn có chắc chắn muốn duyệt các đơn đăng ký đã chọn?',
-      onOk: () => {
-        const updatedRegistrations = registrations.map(reg => {
-          if (records.find(r => r.id === reg.id)) {
-            return { ...reg, status: 'approved' };
-          }
-          return reg;
-        });
-        setRegistrations(updatedRegistrations);
-        
-        // Add to history
-        const newHistory = records.map(reg => ({
-          id: Date.now().toString(),
-          registrationId: reg.id,
-          action: 'approve' as const,
-          actionBy: 'Admin',
-          actionAt: new Date().toISOString(),
-        }));
-        setActionHistory([...actionHistory, ...newHistory]);
-        
-        message.success(`Đã duyệt ${records.length} đơn đăng ký`);
-        setSelectedRows([]);
-      },
-    });
-  };
-
-  const handleReject = (records: IMemberRegistration[]) => {
-    Modal.confirm({
-      title: `Xác nhận từ chối ${records.length} đơn đăng ký`,
-      content: (
-        <div>
-          <p>Vui lòng nhập lý do từ chối:</p>
-          <Input.TextArea
-            rows={4}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Nhập lý do từ chối"
-          />
-        </div>
-      ),
-      onOk: () => {
-        if (!rejectReason) {
-          message.error('Vui lòng nhập lý do từ chối');
-          return;
-        }
-
-        const updatedRegistrations = registrations.map(reg => {
-          if (records.find(r => r.id === reg.id)) {
-            return { ...reg, status: 'rejected', rejectReason };
-          }
-          return reg;
-        });
-        setRegistrations(updatedRegistrations);
-
-        // Add to history
-        const newHistory = records.map(reg => ({
-          id: Date.now().toString(),
-          registrationId: reg.id,
-          action: 'reject' as const,
-          actionBy: 'Admin',
-          actionAt: new Date().toISOString(),
-          reason: rejectReason,
-        }));
-        setActionHistory([...actionHistory, ...newHistory]);
-
-        message.success(`Đã từ chối ${records.length} đơn đăng ký`);
-        setSelectedRows([]);
-        setRejectReason('');
-      },
-    });
-  };
-
-  const handleViewHistory = (registration: IMemberRegistration) => {
-    setCurrentRegistration(registration);
-    setIsHistoryModalVisible(true);
-  };
-
-  const rowSelection = {
-    onChange: (selectedRowKeys: React.Key[], selectedRows: IMemberRegistration[]) => {
-      setSelectedRows(selectedRows);
-    },
-  };
-
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
+    <div style={{ padding: 24 }}>
+      <Card>
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => {
-            setCurrentRegistration(null);
-            setIsModalVisible(true);
-          }}
-          style={{ marginRight: 8 }}
+          style={{ backgroundColor: 'red', borderColor: 'red', marginBottom: 16 }}
+          onClick={() => setIsModalOpen(true)}
         >
           Thêm đơn đăng ký
         </Button>
-        {selectedRows.length > 0 && (
-          <>
-            <Button
-              type="primary"
-              icon={<CheckOutlined />}
-              onClick={() => handleApprove(selectedRows)}
-              style={{ marginRight: 8 }}
-            >
-              Duyệt {selectedRows.length} đơn đã chọn
-            </Button>
-            <Button
-              danger
-              icon={<CloseOutlined />}
-              onClick={() => handleReject(selectedRows)}
-            >
-              Từ chối {selectedRows.length} đơn đã chọn
-            </Button>
-          </>
-        )}
-      </div>
 
-      <Table
-        columns={columns}
-        dataSource={registrations}
-        rowKey="id"
-        rowSelection={{
-          type: 'checkbox',
-          ...rowSelection,
-        }}
-      />
-
-      <Modal
-        title={currentRegistration ? 'Chi tiết đơn đăng ký' : 'Thêm đơn đăng ký'}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={800}
-      >
-        <RegistrationForm
-          initialValues={currentRegistration || undefined}
-          clubs={clubs} // Pass clubs from state
-          onSubmit={(values) => {
-            if (currentRegistration) {
-              setRegistrations(registrations.map(reg =>
-                reg.id === currentRegistration.id ? { ...reg, ...values } : reg
-              ));
-              message.success('Cập nhật đơn đăng ký thành công');
-            } else {
-              const newRegistration: IMemberRegistration = {
-                ...values,
-                id: Date.now().toString(),
-                status: 'pending',
-                createdAt: new Date().toISOString(),
-              } as IMemberRegistration;
-              setRegistrations([...registrations, newRegistration]);
-              message.success('Thêm đơn đăng ký thành công');
-            }
-            setIsModalVisible(false);
-          }}
-          onCancel={() => setIsModalVisible(false)}
+        <Table
+          dataSource={members}
+          columns={columns}
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
         />
-      </Modal>
 
-      <Modal
-        title="Lịch sử thao tác"
-        open={isHistoryModalVisible}
-        onCancel={() => setIsHistoryModalVisible(false)}
-        footer={null}
-      >
-        {currentRegistration && (
-          <Timeline>
-            {actionHistory
-              .filter(history => history.registrationId === currentRegistration.id)
-              .sort((a, b) => new Date(b.actionAt).getTime() - new Date(a.actionAt).getTime())
-              .map(history => (
-                <Timeline.Item
-                  key={history.id}
-                  color={history.action === 'approve' ? 'green' : 'red'}
+        <Modal
+          title="Thêm đơn đăng ký mới"
+          open={isModalOpen}
+          onCancel={() => setIsModalOpen(false)}
+          footer={null}
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleFinish}
+            autoComplete="off"
+          >
+            <Form.Item label="Họ tên" name="fullName" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item label="Email" name="email" rules={[{ required: true }]}>
+              <Input type="email" />
+            </Form.Item>
+            <Form.Item label="Số điện thoại" name="phone" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item label="Giới tính" name="gender" rules={[{ required: true }]}>
+              <Select placeholder="Chọn giới tính">
+                <Select.Option value="Nam">Nam</Select.Option>
+                <Select.Option value="Nữ">Nữ</Select.Option>
+                <Select.Option value="Khác">Khác</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label="Địa chỉ" name="address" rules={[{ required: true }]}>
+              <Input.TextArea />
+            </Form.Item>
+            <Form.Item label="Sở trường" name="strength" rules={[{ required: true }]}>
+              <Input.TextArea />
+            </Form.Item>
+            <Form.Item label="Câu lạc bộ" name="clubId" rules={[{ required: true }]}>
+              <Select placeholder="Chọn câu lạc bộ">
+                {clubs.map((club) => (
+                  <Select.Option key={club.id} value={club.id}>
+                    {club.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="Lý do đăng ký" name="reason" rules={[{ required: true }]}>
+              <Input.TextArea />
+            </Form.Item>
+            <Form.Item>
+              <Space style={{ justifyContent: 'end', display: 'flex' }}>
+                <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  style={{ backgroundColor: 'red', borderColor: 'red' }}
                 >
-                  <p>
-                    {history.action === 'approve' ? 'Đã duyệt' : 'Đã từ chối'} bởi {history.actionBy}
-                  </p>
-                  <p>Thời gian: {new Date(history.actionAt).toLocaleString()}</p>
-                  {history.reason && <p>Lý do: {history.reason}</p>}
-                </Timeline.Item>
-              ))}
-          </Timeline>
-        )}
-      </Modal>
+                  OK
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Card>
     </div>
   );
 };
 
-export default MemberRegistrationPage; 
+export default MemberRegistrationPage;
