@@ -1,153 +1,104 @@
 ﻿export default [
   {
-    path: '/user',
-    layout: false,
+    path: '/',
+    component: '@/layouts',
     routes: [
       {
-        path: '/user/login',
-        layout: false,
-        name: 'login',
-        component: './user/Login',
+        path: '/',
+        name: 'Trang chủ',
+        component: './TrangChu',
+        icon: 'HomeOutlined',
       },
       {
-        path: '/user',
-        redirect: '/user/login',
-      },
-    ],
-  },
-
-  ///////////////////////////////////
-  // DEFAULT MENU
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: './TrangChu',
-    icon: 'HomeOutlined',
-  },
-  {
-    path: '/gioi-thieu',
-    name: 'About',
-    component: './TienIch/GioiThieu',
-    hideInMenu: true,
-  },
-  {
-    path: '/random-user',
-    name: 'RandomUser',
-    component: './RandomUser',
-    icon: 'ArrowsAltOutlined',
-  },
-
-
-  // DANH MUC HE THONG
-  // {
-  // 	name: 'DanhMuc',
-  // 	path: '/danh-muc',
-  // 	icon: 'copy',
-  // 	routes: [
-  // 		{
-  // 			name: 'ChucVu',
-  // 			path: 'chuc-vu',
-  // 			component: './DanhMuc/ChucVu',
-  // 		},
-  // 	],
-  // },
-
-  // Quản lý tổng hợp
-  /*{
-    name: 'Quản lý',
-    path: '/management',
-    icon: 'AppstoreOutlined',
-    routes: [
-      {
-        name: 'Nhân viên & Dịch vụ',
-        path: '/management/employees',
-        component: './Management/Employees',
-        icon: 'UserOutlined',
+        path: '/random-user',
+        name: 'RandomUser',
+        component: './RandomUser',
+        icon: 'ArrowsAltOutlined',
       },
       {
-        name: 'Lịch làm việc',
-        path: '/management/schedules',
-        component: './Booking App/components/AppointmentManagement',
-        icon: 'ScheduleOutlined',
-      },
-      {
-        name: 'Lịch hẹn',
-        path: '/management/appointments',
-        icon: 'CalendarOutlined',
+        path: '/club-management',
+        name: 'Quản lý CLB',
+        icon: 'TeamOutlined',
         routes: [
           {
-            name: 'Đặt lịch hẹn',
-            path: '/management/appointments/booking',
-            component: './Booking App/components/AppointmentManagement',
-            icon: 'PlusCircleOutlined',
+            path: '/club-management',
+            component: './ClubManagement/index',
+            name: 'Danh sách CLB',
           },
-          
+          {
+            path: '/club-management/members/:clubId',
+            component: './ClubManagement/members',
+            name: 'Thành viên CLB',
+            hideInMenu: true,
+          },
         ],
       },
       {
-        name: 'Đánh giá',
-        path: '/management/ratings',
-        component: './Booking App/components/ReviewSection',
-        icon: 'StarOutlined',
+        path: '/member-registration',
+        name: 'Quản lý đơn đăng ký',
+        icon: 'FormOutlined',
+        component: './MemberRegistration',
       },
       {
-        name: 'Thống kê',
-        path: '/management/statistics',
-        component: './Booking App/components/Statistics',
-        icon: 'BarChartOutlined',
-      }
+        path: '/course-management',
+        name: 'Quản lý khóa học',
+        icon: 'book',
+        component: './CourseManagement',
+      },
+      {
+        path: '/instructor-management',
+        name: 'Quản lý giảng viên',
+        icon: 'team',
+        component: './InstructorManagement',
+      },
+      {
+        path: '/notification',
+        routes: [
+          {
+            path: './subscribe',
+            exact: true,
+            component: './ThongBao/Subscribe',
+          },
+          {
+            path: './check',
+            exact: true,
+            component: './ThongBao/Check',
+          },
+          {
+            path: './',
+            exact: true,
+            component: './ThongBao/NotifOneSignal',
+          },
+        ],
+        layout: false,
+        hideInMenu: true,
+      },
+      {
+        path: '/user',
+        layout: false,
+        routes: [
+          {
+            path: '/user/login',
+            layout: false,
+            name: 'login',
+            component: './user/Login',
+          },
+          {
+            path: '/user',
+            redirect: '/user/login',
+          },
+        ],
+      },
+      {
+        path: '/403',
+        component: './exception/403/403Page',
+        layout: false,
+      },
+      {
+        path: '/hold-on',
+        component: './exception/DangCapNhat',
+        layout: false,
+      },
     ],
-  },*/
-
-  {
-    path: '/notification',
-    routes: [
-      {
-        path: './subscribe',
-        exact: true,
-        component: './ThongBao/Subscribe',
-      },
-      {
-        path: './check',
-        exact: true,
-        component: './ThongBao/Check',
-      },
-      {
-        path: './',
-        exact: true,
-        component: './ThongBao/NotifOneSignal',
-      },
-    ],
-    layout: false,
-    hideInMenu: true,
   },
-  {
-    path: '/',
-    redirect: '/dashboard',
-  },
-  {
-    path: '/403',
-    component: './exception/403/403Page',
-    layout: false,
-  },
-  {
-    path: '/hold-on',
-    component: './exception/DangCapNhat',
-    layout: false,
-  },
-  {
-    path: '/course-management',
-    name: 'course-management',
-    icon: 'book',
-    component: './CourseManagement',
-  },
-  {
-    path: '/instructor-management',
-    name: 'instructor-management',
-    icon: 'team',
-    component: './InstructorManagement',
-  },
-  {
-    component: './404',
-  }
 ];
